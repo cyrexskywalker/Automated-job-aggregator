@@ -1,0 +1,4 @@
+com/javaproject/vacancy_aggregator/DataInitializer.class
+com/javaproject/vacancy_aggregator/domain/Source.class
+com/javaproject/vacancy_aggregator/VacancyAggregatorApplication.class
+com/javaproject/vacancy_aggregator/repository/SourceRepository.class
