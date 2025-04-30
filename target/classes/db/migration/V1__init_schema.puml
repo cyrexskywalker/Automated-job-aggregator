@@ -1,0 +1,58 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+entity "source" as src {
+  * id : SERIAL <<PK>>
+  --
+    name : VARCHAR(100) <<UQ,NN>>
+    base_url : TEXT <<NN>>
+}
+
+entity "company" as cmp {
+  * id : SERIAL <<PK>>
+  --
+    name : VARCHAR(255) <<UQ,NN>>
+}
+
+entity "vacancy" as vac {
+  * id : SERIAL <<PK>>
+  --
+    source_id : INT <<FK,NN>>
+    company_id : INT <<FK,NN>>
+    title : VARCHAR(255) <<NN>>
+    city : VARCHAR(100>
+    salary : TEXT
+    description : TEXT
+    publication_date : TIMESTAMP
+    url : TEXT <<UQ,NN>>
+    created_at : TIMESTAMP <<DEF=NOW()>>
+}
+
+entity "category" as cat {
+  * id : SERIAL <<PK>>
+  --
+    name : VARCHAR(100) <<UQ,NN>>
+}
+
+entity "vacancy_category" as vc {
+  * vacancy_id : INT <<FK,PK,NN>>
+  * category_id : INT <<FK,PK,NN>>
+}
+
+entity "user_subscription" as sub {
+  * id : SERIAL <<PK>>
+  --
+    criteria : JSONB <<NN>>
+    created_at : TIMESTAMP <<DEF=NOW()>>
+}
+
+' Отношения
+src ||--o{ vac   : "1...*"
+cmp ||--o{ vac   : "1...*"
+vac }o--|| vc    : ""
+cat ||--o{ vc    : ""
+vac ||--o{ vc    : ""
+
+
+@enduml
