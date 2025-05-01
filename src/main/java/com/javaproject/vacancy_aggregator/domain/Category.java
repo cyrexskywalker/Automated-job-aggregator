@@ -9,15 +9,14 @@ import java.util.Set;
 
 @Entity
 @Table(name = "category")
+@Getter
+@Setter
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter
     private Long id;
 
     @Column(nullable = false, unique = true)
-    @Getter
-    @Setter
     private String name;
 
     public Category() {
@@ -25,8 +24,6 @@ public class Category {
     }
 
     @ManyToMany(mappedBy = "categories")
-    @Getter
-    @Setter
     private Set<Vacancy> vacancies = new HashSet<>();
 
     public Category(String name) {

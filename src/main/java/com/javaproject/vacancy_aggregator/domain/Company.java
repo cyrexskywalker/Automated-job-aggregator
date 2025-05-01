@@ -6,15 +6,14 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "company")
+@Getter
+@Setter
 public class Company {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter
     private Long id;
 
     @Column(unique = true, nullable = false)
-    @Getter
-    @Setter
     private String name;
 
     public Company() {

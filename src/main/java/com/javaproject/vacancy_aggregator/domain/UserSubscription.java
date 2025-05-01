@@ -8,18 +8,16 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_subscription")
+@Getter
+@Setter
 public class UserSubscription {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter
     private Long id;
 
-    @Column(columnDefinition = "JSONB", nullable = false)
-    @Getter
-    @Setter
+    @Column(columnDefinition = "TEXT", nullable = false) //todo почему то H2 не понимает сущность JSONB
     private String criteria;
 
-    @Getter
     private final LocalDateTime created_at = LocalDateTime.now();
 
     public UserSubscription() {

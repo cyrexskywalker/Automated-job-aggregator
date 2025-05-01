@@ -6,20 +6,17 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "source")
+@Getter
+@Setter
 public class Source {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter
     private Long id;
 
     @Column(nullable = false, unique = true)
-    @Getter
-    @Setter
     private String name;
 
     @Column(nullable = false)
-    @Getter
-    @Setter
     private String baseUrl;
 
     public Source() {

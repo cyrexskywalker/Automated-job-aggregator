@@ -21,7 +21,7 @@ entity "vacancy" as vac {
     source_id : INT <<FK,NN>>
     company_id : INT <<FK,NN>>
     title : VARCHAR(255) <<NN>>
-    city : VARCHAR(100>
+    city : VARCHAR(100)
     salary : TEXT
     description : TEXT
     publication_date : TIMESTAMP
