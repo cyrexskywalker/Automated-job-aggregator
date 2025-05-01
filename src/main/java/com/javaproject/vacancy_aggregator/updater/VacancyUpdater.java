@@ -2,7 +2,7 @@ package com.javaproject.vacancy_aggregator.updater;
 
 import com.javaproject.vacancy_aggregator.domain.RawVacancy;
 import com.javaproject.vacancy_aggregator.parser.VacancyParser;
-import com.javaproject.vacancy_aggregator.services.VacancyService;
+import com.javaproject.vacancy_aggregator.service.VacancyService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

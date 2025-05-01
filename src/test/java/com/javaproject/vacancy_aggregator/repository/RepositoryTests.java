@@ -68,10 +68,8 @@ class RepositoryTests {
         Vacancy v = new Vacancy();
         v.setTitle("Dev");
         v.setUrl("http://example.com/vac/1");
-        // Need to set mandatory associations: source and company
         Source src = new Source("src", "u");
         Company comp = new Company("comp");
-        // save dependencies so foreign keys valid
         sourceRepo.save(src);
         companyRepo.save(comp);
         v.setSource(src);

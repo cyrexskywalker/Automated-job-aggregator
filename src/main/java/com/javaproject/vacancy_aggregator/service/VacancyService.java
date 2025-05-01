@@ -1,4 +1,4 @@
-package com.javaproject.vacancy_aggregator.services;
+package com.javaproject.vacancy_aggregator.service;
 
 import com.javaproject.vacancy_aggregator.domain.Company;
 import com.javaproject.vacancy_aggregator.domain.RawVacancy;
@@ -7,9 +7,12 @@ import com.javaproject.vacancy_aggregator.domain.Vacancy;
 import com.javaproject.vacancy_aggregator.repository.CompanyRepository;
 import com.javaproject.vacancy_aggregator.repository.SourceRepository;
 import com.javaproject.vacancy_aggregator.repository.VacancyRepository;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class VacancyService {
@@ -23,6 +26,7 @@ public class VacancyService {
         this.sourceRepo = sourceRepository;
     }
 
+    @Transactional
     public void saveAll(List<RawVacancy> vacancies) {
         for (RawVacancy rv : vacancies) {
 
@@ -51,9 +55,24 @@ public class VacancyService {
             vacancy.setCity(rv.getCity());
             vacancy.setSalary(rv.getSalary());
             vacancy.setDescription(rv.getDescription());
-            vacancy.setPublication_date(rv.getPublicationDate());
+            vacancy.setPublicationDate(rv.getPublicationDate());
 
             vacancyRepo.save(vacancy);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Vacancy> findAll(String city, String company, String salary) {
+        return vacancyRepo.findAll().stream()
+                .filter(v -> city == null || (v.getCity() != null && v.getCity().equalsIgnoreCase(city)))
+                .filter(v -> company == null || (v.getCompany() != null && v.getCompany().getName().equalsIgnoreCase(company)))
+                .filter(v -> salary == null || (v.getSalary() != null && v.getSalary().toLowerCase().contains(salary.toLowerCase())))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Vacancy findById(Long id) {
+        return vacancyRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Вакансия с таким id не найдена: " + id));
     }
 }

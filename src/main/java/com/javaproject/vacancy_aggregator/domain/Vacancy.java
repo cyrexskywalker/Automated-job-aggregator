@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -33,18 +34,19 @@ public class Vacancy {
 
     private String description;
 
-    private LocalDateTime publication_date = LocalDateTime.now();
+    private LocalDateTime publicationDate = LocalDateTime.now();
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime created_at = LocalDateTime.now();
 
     @Column(nullable = false, unique = true)
     private String url;
-
-    private LocalDateTime created_at = LocalDateTime.now();
 
     @ManyToMany
     @JoinTable(name = "vacancy_category",
             joinColumns = @JoinColumn(name = "vacancy_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"))
-    private Set<Category> categories;
+    private Set<Category> categories = new HashSet<>();
 
     public Vacancy() {
         //нужно для JPA (требует конструктор без аргументов)

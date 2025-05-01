@@ -2,7 +2,7 @@ package com.javaproject.vacancy_aggregator.parsing;
 
 import com.javaproject.vacancy_aggregator.domain.RawVacancy;
 import com.javaproject.vacancy_aggregator.parser.VacancyParser;
-import com.javaproject.vacancy_aggregator.services.VacancyService;
+import com.javaproject.vacancy_aggregator.service.VacancyService;
 import com.javaproject.vacancy_aggregator.updater.VacancyUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,10 +48,8 @@ class VacancyUpdaterTest {
     @Test
     void fetchAndSave_invokesParserAndService() throws NoSuchFieldException, IllegalAccessException {
         List<String> urls = List.of("u1", "u2");
-        // inject test urls via reflection or setter; here assume field is accessible
-        // alternatively, instantiate updater manually
+
         VacancyUpdater testUpdater = new VacancyUpdater(parser, service);
-        // set urls via reflection
         var field = VacancyUpdater.class.getDeclaredField("urls");
         field.setAccessible(true);
         field.set(testUpdater, urls);

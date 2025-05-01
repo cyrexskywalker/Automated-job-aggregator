@@ -18,7 +18,8 @@ public class UserSubscription {
     @Column(columnDefinition = "TEXT", nullable = false) //todo почему то H2 не понимает сущность JSONB
     private String criteria;
 
-    private final LocalDateTime created_at = LocalDateTime.now();
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime created_at = LocalDateTime.now();
 
     public UserSubscription() {
         //нужно для JPA (требует конструктор без аргументов)

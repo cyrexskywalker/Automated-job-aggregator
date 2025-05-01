@@ -17,6 +17,7 @@ public class HhRuParser implements VacancyParser {
 
     private static final String SEARCH_URL = "https://hh.ru/search/vacancy?text=Java+Developer";
 
+    //todo парсинг по всем страницам (пока только на первой)
     @Override
     public List<RawVacancy> parse(String text) {
         List<RawVacancy> vacancies = new ArrayList<>();
