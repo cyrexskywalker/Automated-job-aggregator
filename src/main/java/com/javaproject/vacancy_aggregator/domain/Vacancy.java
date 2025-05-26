@@ -1,8 +1,8 @@
 package com.javaproject.vacancy_aggregator.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -10,8 +10,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "vacancy")
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
 public class Vacancy {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,10 +47,6 @@ public class Vacancy {
             joinColumns = @JoinColumn(name = "vacancy_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"))
     private Set<Category> categories = new HashSet<>();
-
-    public Vacancy() {
-        //нужно для JPA (требует конструктор без аргументов)
-    }
 
     public Vacancy(Source sourceId, Company companyId, String title, String url) {
         this.source = sourceId;

@@ -1,13 +1,13 @@
 package com.javaproject.vacancy_aggregator.domain;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
 @Table(name = "company")
-@Getter
-@Setter
+@Data
 public class Company {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

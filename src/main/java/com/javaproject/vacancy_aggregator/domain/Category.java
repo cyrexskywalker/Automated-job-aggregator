@@ -1,6 +1,7 @@
 package com.javaproject.vacancy_aggregator.domain;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,8 +10,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "category")
-@Getter
-@Setter
+@Data
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,7 +20,6 @@ public class Category {
     private String name;
 
     public Category() {
-        //нужно для JPA (требует конструктор без аргументов)
     }
 
     @ManyToMany(mappedBy = "categories")

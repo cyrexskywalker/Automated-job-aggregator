@@ -1,13 +1,11 @@
 package com.javaproject.vacancy_aggregator.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 @Entity
 @Table(name = "source")
-@Getter
-@Setter
+@Data
 public class Source {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,7 +18,7 @@ public class Source {
     private String baseUrl;
 
     public Source() {
-        //нужно для JPA (требует конструктор без аргументов)
+
     }
 
     public Source(String name, String baseUrl) {

@@ -1,15 +1,16 @@
 package com.javaproject.vacancy_aggregator.controller;
 
-import com.javaproject.vacancy_aggregator.domain.Vacancy;
 import com.javaproject.vacancy_aggregator.dto.VacancyDTO;
 import com.javaproject.vacancy_aggregator.service.VacancyService;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @RestController
-@RequestMapping("api/vacancies")
+@RequestMapping("/api/vacancies")
 public class VacancyController {
     private final VacancyService vacancyService;
 
@@ -18,20 +19,19 @@ public class VacancyController {
     }
 
     @GetMapping
-    public List<VacancyDTO> getVacancies(
+    public Page<VacancyDTO> getVacancies(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String company,
-            @RequestParam(required = false) String salary
+            @RequestParam(required = false) String salary,
+            @ParameterObject @PageableDefault(page = 0, size = 20, sort = "publicationDate", direction = Sort.Direction.DESC)
+            Pageable pageable
     ) {
-        return vacancyService.findAll(city, company, salary)
-                .stream()
-                .map(VacancyDTO::from)
-                .collect(Collectors.toList());
+        return vacancyService.findAll(city, company, salary, pageable)
+                .map(VacancyDTO::from);
     }
 
     @GetMapping("/{id}")
-    public VacancyDTO getVacancyById(@PathVariable("id") Long id) {
-        Vacancy vacancy = vacancyService.findById(id);
-        return VacancyDTO.from(vacancy);
+    public VacancyDTO getVacancyById(@PathVariable Long id) {
+        return VacancyDTO.from(vacancyService.findById(id));
     }
 }

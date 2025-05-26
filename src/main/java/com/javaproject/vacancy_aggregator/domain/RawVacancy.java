@@ -1,12 +1,12 @@
 package com.javaproject.vacancy_aggregator.domain;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 public class RawVacancy {
     private final String title;
     private final String company;

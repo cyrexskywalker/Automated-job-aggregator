@@ -1,26 +1,25 @@
 package com.javaproject.vacancy_aggregator.service;
 
+import com.javaproject.vacancy_aggregator.domain.Company;
 import com.javaproject.vacancy_aggregator.domain.RawVacancy;
 import com.javaproject.vacancy_aggregator.domain.Source;
-import com.javaproject.vacancy_aggregator.domain.Company;
 import com.javaproject.vacancy_aggregator.domain.Vacancy;
-import com.javaproject.vacancy_aggregator.repository.VacancyRepository;
-import com.javaproject.vacancy_aggregator.repository.SourceRepository;
 import com.javaproject.vacancy_aggregator.repository.CompanyRepository;
+import com.javaproject.vacancy_aggregator.repository.SourceRepository;
+import com.javaproject.vacancy_aggregator.repository.VacancyRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,111 +27,107 @@ class VacancyServiceTest {
 
     @Mock
     private VacancyRepository vacancyRepo;
-
-    @Mock
-    private SourceRepository sourceRepo;
-
     @Mock
     private CompanyRepository companyRepo;
+    @Mock
+    private SourceRepository sourceRepo;
 
     @InjectMocks
     private VacancyService vacancyService;
 
-    private RawVacancy raw;
-    private Source src;
-    private Company comp;
+    private Company company;
+    private Source source;
+    private RawVacancy rawNew;
+    private RawVacancy rawDup;
 
     @BeforeEach
     void setUp() {
-        src = new Source("hh.ru", "https://hh.ru");
-        comp = new Company("ExampleCorp");
-        raw = new RawVacancy(
-                "Java Developer",
-                comp.getName(),
-                "Moscow",
-                "100k-200k",
-                "Desc",
-                LocalDateTime.of(2025, 1, 1, 12, 0),
-                "https://hh.ru/vacancy/1",
-                src.getName(),
-                src.getBaseUrl()
+        company = new Company("TestCo");
+        company.setId(1L);
+        source = new Source("TestSrc", "http://src");
+        source.setId(2L);
+
+        rawNew = new RawVacancy(
+                "Dev", "TestCo", "Moscow", "100000",
+                "Desc", LocalDateTime.now(),
+                "http://vac1", "TestSrc", "http://src"
+        );
+        rawDup = new RawVacancy(
+                "QA", "TestCo", "SPB", "50000",
+                "Desc2", LocalDateTime.now(),
+                "http://dup", "TestSrc", "http://src"
         );
     }
 
     @Test
-    void saveAll_skipsWhenExists() {
-        when(vacancyRepo.existsByUrl(raw.getUrl())).thenReturn(true);
+    void saveAll_shouldSkipDuplicatesAndSaveNew() {
+        // duplicate по URL
+        when(vacancyRepo.existsByUrl("http://dup")).thenReturn(true);
+        // для нового — нет дублика
+        when(vacancyRepo.existsByUrl("http://vac1")).thenReturn(false);
+        // companyRepo не найдёт — создадим
+        when(companyRepo.findByName("TestCo")).thenReturn(Optional.empty());
+        when(companyRepo.save(any(Company.class))).thenReturn(company);
+        // sourceRepo не найдёт — создадим
+        when(sourceRepo.findByName("TestSrc")).thenReturn(Optional.empty());
+        when(sourceRepo.save(any(Source.class))).thenReturn(source);
+        // vacancyRepo.save просто возвращает объект
+        when(vacancyRepo.save(any(Vacancy.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        vacancyService.saveAll(List.of(raw));
+        vacancyService.saveAll(List.of(rawDup, rawNew));
 
-        verify(vacancyRepo, never()).save(any(Vacancy.class));
+        // Проверяем, что для дубликата остался только existsByUrl
+        verify(vacancyRepo).existsByUrl("http://dup");
+        verifyNoMoreInteractions(vacancyRepo, companyRepo, sourceRepo);
+
+        // Для новой вакансии
+        verify(vacancyRepo).existsByUrl("http://vac1");
+        verify(companyRepo).findByName("TestCo");
+        verify(companyRepo).save(argThat(c -> c.getName().equals("TestCo")));
+        verify(sourceRepo).findByName("TestSrc");
+        verify(sourceRepo).save(argThat(s -> s.getName().equals("TestSrc")));
+        verify(vacancyRepo).save(argThat(v ->
+                v.getUrl().equals("http://vac1") &&
+                        v.getTitle().equals("Dev") &&
+                        v.getCompany().getName().equals("TestCo") &&
+                        v.getSource().getName().equals("TestSrc")
+        ));
     }
 
     @Test
-    void saveAll_createsSourceCompanyAndVacancy() {
-        when(vacancyRepo.existsByUrl(raw.getUrl())).thenReturn(false);
-        when(sourceRepo.findByName(raw.getSourceName())).thenReturn(Optional.empty());
-        when(companyRepo.findByName(raw.getCompany())).thenReturn(Optional.empty());
-        when(sourceRepo.save(any(Source.class))).thenAnswer(i -> i.getArgument(0));
-        when(companyRepo.save(any(Company.class))).thenAnswer(i -> i.getArgument(0));
-        when(vacancyRepo.save(any(Vacancy.class))).thenAnswer(i -> i.getArgument(0));
+    void findById_existing_returnsVacancy() {
+        Vacancy v = new Vacancy(source, company, "X", "u");
+        v.setId(10L);
+        when(vacancyRepo.findById(10L)).thenReturn(Optional.of(v));
 
-        vacancyService.saveAll(List.of(raw));
-
-        ArgumentCaptor<Source> srcCap = ArgumentCaptor.forClass(Source.class);
-        verify(sourceRepo).save(srcCap.capture());
-        assertThat(srcCap.getValue().getName()).isEqualTo(raw.getSourceName());
-
-        ArgumentCaptor<Company> compCap = ArgumentCaptor.forClass(Company.class);
-        verify(companyRepo).save(compCap.capture());
-        assertThat(compCap.getValue().getName()).isEqualTo(raw.getCompany());
-
-        ArgumentCaptor<Vacancy> vacCap = ArgumentCaptor.forClass(Vacancy.class);
-        verify(vacancyRepo).save(vacCap.capture());
-        Vacancy saved = vacCap.getValue();
-        assertThat(saved.getTitle()).isEqualTo(raw.getTitle());
-        assertThat(saved.getUrl()).isEqualTo(raw.getUrl());
-    }
-
-    @Test
-    void findAll_filtersByCityCompanyAndSalary() {
-        Vacancy v1 = new Vacancy(src, comp, "A", "url1");
-        v1.setCity("Moscow");
-        v1.setSalary("100k");
-        Vacancy v2 = new Vacancy(src, comp, "B", "url2");
-        v2.setCity("Saint-Petersburg");
-        v2.setSalary("200k");
-        when(vacancyRepo.findAll()).thenReturn(List.of(v1, v2));
-
-        List<Vacancy> byCity = vacancyService.findAll("moscow", null, null);
-        assertThat(byCity).containsExactly(v1);
-
-        List<Vacancy> bySalary = vacancyService.findAll(null, null, "200");
-        assertThat(bySalary).containsExactly(v2);
-
-        List<Vacancy> both = vacancyService.findAll("moscow", null, "100");
-        assertThat(both).containsExactly(v1);
-
-        List<Vacancy> all = vacancyService.findAll(null, null, null);
-        assertThat(all).containsExactlyInAnyOrder(v1, v2);
-    }
-
-    @Test
-    void findById_returnsWhenExists() {
-        Vacancy v = new Vacancy(src, comp, "C", "url3");
-        when(vacancyRepo.findById(3L)).thenReturn(Optional.of(v));
-
-        Vacancy found = vacancyService.findById(3L);
+        Vacancy found = vacancyService.findById(10L);
         assertThat(found).isSameAs(v);
     }
 
     @Test
-    void findById_throwsWhenNotFound() {
-        when(vacancyRepo.findById(42L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> vacancyService.findById(42L))
+    void findById_notFound_throws() {
+        when(vacancyRepo.findById(99L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> vacancyService.findById(99L))
                 .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("Вакансия с таким id не найдена: 42");
+                .hasMessageContaining("99");
+    }
+
+    @Test
+    void findAll_withFilters_callsWithNonNullSpec() {
+        Pageable pageReq = PageRequest.of(0, 5, Sort.by("id"));
+        Page<Vacancy> mockPage = new PageImpl<>(List.of());
+        // любой Specification и Pageable возвращают нашу mockPage
+        when(vacancyRepo.findAll(any(Specification.class), eq(pageReq)))
+                .thenReturn(mockPage);
+
+        // Проверяем по одному параметру
+        assertThat(vacancyService.findAll("Moscow", null, null, pageReq)).isEqualTo(mockPage);
+        assertThat(vacancyService.findAll(null, "TestCo", null, pageReq)).isEqualTo(mockPage);
+        assertThat(vacancyService.findAll(null, null, "100000", pageReq)).isEqualTo(mockPage);
+
+        // и комбинированно
+        assertThat(vacancyService.findAll("Moscow", "TestCo", "100000", pageReq)).isEqualTo(mockPage);
+
+        verify(vacancyRepo, times(4)).findAll(any(Specification.class), eq(pageReq));
     }
 }
-

@@ -6,110 +6,127 @@ import com.javaproject.vacancy_aggregator.domain.Vacancy;
 import com.javaproject.vacancy_aggregator.service.VacancyService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(SpringExtension.class)
-@WebMvcTest(VacancyController.class)
-@Import(GlobalExceptionHandler.class)
-@AutoConfigureMockMvc(addFilters = false)
+@ExtendWith(MockitoExtension.class)
 class VacancyControllerTest {
-    @Autowired
+
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Mock
     private VacancyService vacancyService;
 
-    private Source src;
-    private Company comp;
+    @InjectMocks
+    private VacancyController controller;
+
+    private Vacancy sampleVacancy() {
+        Company company = new Company("TestCo");
+        company.setId(1L);
+        Source source = new Source("TestSrc", "http://src");
+        source.setId(2L);
+
+        Vacancy v = new Vacancy(source, company, "Java Developer", "http://vac1");
+        v.setId(42L);
+        v.setCity("Moscow");
+        v.setSalary("100_000");
+        v.setPublicationDate(LocalDateTime.of(2025, 5, 26, 12, 0));
+        return v;
+    }
 
     @BeforeEach
     void setUp() {
-        src = new Source("test-source", "http://test-url");
-        comp = new Company("TestCompany");
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice() // если есть общий @ControllerAdvice — можно добавить
+                .build();
     }
 
     @Test
-    void GET_vacancies_withoutFilters_returnsAll() throws Exception {
-        Vacancy v1 = new Vacancy(src, comp, "DevA", "url1");
-        v1.setCity("Moscow");
-        v1.setSalary("100k");
-        v1.setPublicationDate(LocalDateTime.of(2025, 1, 1, 10, 0));
+    @DisplayName("GET /api/vacancies без параметров возвращает первую страницу по умолчанию")
+    void getVacancies_DefaultPage_ReturnsPage() throws Exception {
+        Vacancy v = sampleVacancy();
+        PageRequest defaultPage = PageRequest.of(0, 20, Sort.by("publicationDate").descending());
+        Page<Vacancy> page = new PageImpl<>(List.of(v), defaultPage, 1);
 
-        Vacancy v2 = new Vacancy(src, comp, "DevB", "url2");
-        v2.setCity("SPB");
-        v2.setSalary("200k");
-        v2.setPublicationDate(LocalDateTime.of(2025, 1, 2, 11, 0));
+        when(vacancyService.findAll(isNull(), isNull(), isNull(), eq(defaultPage)))
+                .thenReturn(page);
 
-        when(vacancyService.findAll(isNull(), isNull(), isNull()))
-                .thenReturn(List.of(v1, v2));
-
-        mockMvc.perform(get("/api/vacancies")
-                        .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/vacancies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].title").value("DevA"))
-                .andExpect(jsonPath("$[1].title").value("DevB"));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(42))
+                .andExpect(jsonPath("$.pageable.pageSize").value(20))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(0))
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        verify(vacancyService).findAll(null, null, null, defaultPage);
     }
 
     @Test
-    void GET_vacancies_withCityFilter_appliesFilter() throws Exception {
-        Vacancy v = new Vacancy(src, comp, "DevCity", "url3");
-        v.setCity("Moscow");
-        v.setSalary("150k");
-        v.setPublicationDate(LocalDateTime.now());
+    @DisplayName("GET /api/vacancies с фильтрами и кастомной пагинацией")
+    void getVacancies_WithParamsAndPageable() throws Exception {
+        Vacancy v = sampleVacancy();
+        PageRequest customPage = PageRequest.of(1, 5, Sort.by("publicationDate").ascending());
+        Page<Vacancy> page = new PageImpl<>(List.of(v), customPage, 1);
 
-        when(vacancyService.findAll(eq("Moscow"), isNull(), isNull()))
-                .thenReturn(List.of(v));
+        when(vacancyService.findAll(eq("Moscow"), eq("TestCo"), eq("100000"), eq(customPage)))
+                .thenReturn(page);
 
         mockMvc.perform(get("/api/vacancies")
                         .param("city", "Moscow")
-                        .accept(MediaType.APPLICATION_JSON))
+                        .param("company", "TestCo")
+                        .param("salary", "100000")
+                        .param("page", "1")
+                        .param("size", "5")
+                        .param("sort", "publicationDate,asc")
+                )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].city").value("Moscow"));
+                .andExpect(jsonPath("$.content[0].city").value("Moscow"))
+                .andExpect(jsonPath("$.pageable.pageSize").value(5))
+                .andExpect(jsonPath("$.pageable.pageNumber").value(1))
+                .andExpect(jsonPath("$.sort.sorted").value(true));
+
+        verify(vacancyService).findAll("Moscow", "TestCo", "100000", customPage);
     }
 
     @Test
-    void GET_vacancies_byId_found() throws Exception {
-        Vacancy v = new Vacancy(src, comp, "DevDetail", "url4");
-        v.setCity("CityX");
-        v.setSalary("50k");
-        v.setPublicationDate(LocalDateTime.now());
+    @DisplayName("GET /api/vacancies/{id} возвращает DTO, когда есть запись")
+    void getVacancyById_Found() throws Exception {
+        Vacancy v = sampleVacancy();
+        when(vacancyService.findById(42L)).thenReturn(v);
 
-        when(vacancyService.findById(5L)).thenReturn(v);
-
-        mockMvc.perform(get("/api/vacancies/5")
-                        .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/vacancies/42"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("DevDetail"))
-                .andExpect(jsonPath("$.url").value("url4"));
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.title").value("Java Developer"))
+                .andExpect(jsonPath("$.company").value("TestCo"));
+
+        verify(vacancyService).findById(42L);
     }
 
     @Test
-    void GET_vacancies_byId_notFound() throws Exception {
+    @DisplayName("GET /api/vacancies/{id} — 404, если не найдено")
+    void getVacancyById_NotFound() throws Exception {
         when(vacancyService.findById(99L))
                 .thenThrow(new EntityNotFoundException("Вакансия с таким id не найдена: 99"));
 
-        mockMvc.perform(get("/api/vacancies/99")
-                        .accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/vacancies/99"))
                 .andExpect(status().isNotFound());
     }
 }

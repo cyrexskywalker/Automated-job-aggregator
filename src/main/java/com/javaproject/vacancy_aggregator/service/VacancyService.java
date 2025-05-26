@@ -8,11 +8,14 @@ import com.javaproject.vacancy_aggregator.repository.CompanyRepository;
 import com.javaproject.vacancy_aggregator.repository.SourceRepository;
 import com.javaproject.vacancy_aggregator.repository.VacancyRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.transaction.annotation.Transactional;
+import com.javaproject.vacancy_aggregator.specification.VacancySpecifications;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class VacancyService {
@@ -20,7 +23,9 @@ public class VacancyService {
     private final CompanyRepository companyRepo;
     private final SourceRepository sourceRepo;
 
-    public VacancyService(VacancyRepository vacancyRepository, CompanyRepository companyRepository, SourceRepository sourceRepository) {
+    public VacancyService(VacancyRepository vacancyRepository,
+                          CompanyRepository companyRepository,
+                          SourceRepository sourceRepository) {
         this.vacancyRepo = vacancyRepository;
         this.companyRepo = companyRepository;
         this.sourceRepo = sourceRepository;
@@ -29,29 +34,16 @@ public class VacancyService {
     @Transactional
     public void saveAll(List<RawVacancy> vacancies) {
         for (RawVacancy rv : vacancies) {
-
-            // пропуск дубликатов по URL
             if (vacancyRepo.existsByUrl(rv.getUrl())) {
                 continue;
             }
 
             Company company = companyRepo.findByName(rv.getCompany())
-                    .orElseGet(() -> {
-                        Company c = new Company(rv.getCompany());
-                        return companyRepo.save(c);
-                    });
+                    .orElseGet(() -> companyRepo.save(new Company(rv.getCompany())));
             Source source = sourceRepo.findByName(rv.getSourceName())
-                    .orElseGet(() -> {
-                        Source s = new Source(rv.getSourceName(), rv.getSourceUrl());
-                        return sourceRepo.save(s);
-                    });
+                    .orElseGet(() -> sourceRepo.save(new Source(rv.getSourceName(), rv.getSourceUrl())));
 
-            Vacancy vacancy = new Vacancy(
-                    source,
-                    company,
-                    rv.getTitle(),
-                    rv.getUrl()
-            );
+            Vacancy vacancy = new Vacancy(source, company, rv.getTitle(), rv.getUrl());
             vacancy.setCity(rv.getCity());
             vacancy.setSalary(rv.getSalary());
             vacancy.setDescription(rv.getDescription());
@@ -62,12 +54,25 @@ public class VacancyService {
     }
 
     @Transactional(readOnly = true)
-    public List<Vacancy> findAll(String city, String company, String salary) {
-        return vacancyRepo.findAll().stream()
-                .filter(v -> city == null || (v.getCity() != null && v.getCity().equalsIgnoreCase(city)))
-                .filter(v -> company == null || (v.getCompany() != null && v.getCompany().getName().equalsIgnoreCase(company)))
-                .filter(v -> salary == null || (v.getSalary() != null && v.getSalary().toLowerCase().contains(salary.toLowerCase())))
-                .collect(Collectors.toList());
+    public Page<Vacancy> findAll(
+            String city,
+            String company,
+            String salary,
+            Pageable pageable
+    ) {
+        Specification<Vacancy> spec = Specification.where(null);
+
+        if (city != null && !city.isBlank()) {
+            spec = spec.and(VacancySpecifications.cityEquals(city));
+        }
+        if (company != null && !company.isBlank()) {
+            spec = spec.and(VacancySpecifications.companyEquals(company));
+        }
+        if (salary != null && !salary.isBlank()) {
+            spec = spec.and(VacancySpecifications.salaryContains(salary));
+        }
+
+        return vacancyRepo.findAll(spec, pageable);
     }
 
     @Transactional(readOnly = true)
