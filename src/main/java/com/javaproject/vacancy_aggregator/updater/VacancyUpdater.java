@@ -19,17 +19,16 @@ public class VacancyUpdater {
         this.service = vacancyService;
     }
 
-    // Список URL для парсинга
-    private List<String> urls = List.of(
-            "https://hh.ru/search/vacancy?text=Java+Developer"
+    private final List<String> searchQueries = List.of(
+            "Java Developer",
+            "Spring Boot",
+            "Microservices"
     );
 
     @Scheduled(fixedDelay = 60 * 60 * 1000) // каждый час
     public void fetchAndSave() {
-        for (String url : urls) {
-            // возвращаем список найденных вакансий
-            List<RawVacancy> rawList = parser.parse(url);
-            // сохраняем только если есть новые вакансии
+        for (String query : searchQueries) {
+            List<RawVacancy> rawList = parser.parse(query);
             if (!rawList.isEmpty()) {
                 service.saveAll(rawList);
             }

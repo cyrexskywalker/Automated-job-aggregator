@@ -31,9 +31,9 @@ CREATE TABLE category (
     name VARCHAR(100) UNIQUE NOT NULL
 );
 
--- Связь many-to-many вакансии ↔ категории
+-- Связь многие-ко-многим вакансии ↔ категории
 CREATE TABLE vacancy_category (
-    vacancy_id BIGINT NOT NULL REFERENCES vacancy(id),
+    vacancy_id  BIGINT NOT NULL REFERENCES vacancy(id),
     category_id BIGINT NOT NULL REFERENCES category(id),
     PRIMARY KEY (vacancy_id, category_id)
 );
@@ -41,6 +41,6 @@ CREATE TABLE vacancy_category (
 -- Подписки пользователей
 CREATE TABLE user_subscription (
     id BIGSERIAL PRIMARY KEY,
-    criteria JSONB NOT NULL,
+    criteria TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );

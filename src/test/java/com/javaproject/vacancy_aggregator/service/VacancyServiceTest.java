@@ -79,17 +79,14 @@ class VacancyServiceTest {
 
         vacancyService.saveAll(List.of(raw));
 
-        // Verify source created
         ArgumentCaptor<Source> srcCap = ArgumentCaptor.forClass(Source.class);
         verify(sourceRepo).save(srcCap.capture());
         assertThat(srcCap.getValue().getName()).isEqualTo(raw.getSourceName());
 
-        // Verify company created
         ArgumentCaptor<Company> compCap = ArgumentCaptor.forClass(Company.class);
         verify(companyRepo).save(compCap.capture());
         assertThat(compCap.getValue().getName()).isEqualTo(raw.getCompany());
 
-        // Verify vacancy saved
         ArgumentCaptor<Vacancy> vacCap = ArgumentCaptor.forClass(Vacancy.class);
         verify(vacancyRepo).save(vacCap.capture());
         Vacancy saved = vacCap.getValue();

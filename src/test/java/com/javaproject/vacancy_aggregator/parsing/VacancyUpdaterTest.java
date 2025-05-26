@@ -50,7 +50,7 @@ class VacancyUpdaterTest {
         List<String> urls = List.of("u1", "u2");
 
         VacancyUpdater testUpdater = new VacancyUpdater(parser, service);
-        var field = VacancyUpdater.class.getDeclaredField("urls");
+        var field = VacancyUpdater.class.getDeclaredField("searchQueries");
         field.setAccessible(true);
         field.set(testUpdater, urls);
 
