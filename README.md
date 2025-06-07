@@ -118,9 +118,8 @@
             "url": "https://example.com/vacancy/42",
             "description": "Ищем Java-разработчика"
           }
-          // …
         ],
-        "pageable": { /* page metadata */ },
+        "pageable": {},
         "totalElements": 123,
         "totalPages": 3
       }
