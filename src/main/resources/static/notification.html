@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Создать уведомление</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+        }
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 2rem auto;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin: 0.75rem 0 0.25rem;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        button {
+            margin-top: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            background: #27ae60;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1e8449;
+        }
+        .back-link {
+            display: block;
+            margin-top: 1rem;
+            color: #3498db;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .message {
+            margin-top: 1rem;
+            font-size: 0.95rem;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Создать уведомление</h1>
+</header>
+
+<div class="container">
+
+    <!-- Форма создания уведомления -->
+    <form id="notification-form">
+        <label for="input-city">Город</label>
+        <input type="text" id="input-city" name="city" placeholder="Например, Москва" />
+
+        <label for="input-company">Компания</label>
+        <input type="text" id="input-company" name="company" placeholder="Например, Acme Corp" />
+
+        <label for="input-keyword">Ключевое слово</label>
+        <input type="text" id="input-keyword" name="keyword" placeholder="Например, Java" />
+
+        <label for="input-salary">Мин. зарплата</label>
+        <input type="text" id="input-salary" name="salary" placeholder="Например, 100000" />
+
+        <label for="input-email">Ваш e-mail</label>
+        <input type="email" id="input-email" name="userEmail" placeholder="example@domain.com" required />
+
+        <button type="submit">Сохранить уведомление</button>
+        <div class="message" id="message"></div>
+    </form>
+
+    <a href="/aggregator.html" class="back-link">&larr; Назад к списку вакансий</a>
+</div>
+
+<script>
+    const form = document.getElementById('notification-form');
+    const msg  = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msg.textContent = ''; // сбрасываем сообщение
+
+        // Собираем данные из формы
+        const city    = document.getElementById('input-city').value.trim();
+        const company = document.getElementById('input-company').value.trim();
+        const keyword = document.getElementById('input-keyword').value.trim();
+        const salary  = document.getElementById('input-salary').value.trim();
+        const email   = document.getElementById('input-email').value.trim();
+
+        // Можно добавить здесь простую валидацию, например, проверку e-mail
+        if (!email) {
+            msg.textContent = 'Пожалуйста, укажите корректный e-mail.';
+            return;
+        }
+
+        // Формируем payload
+        const payload = {
+            city: city || null,
+            company: company || null,
+            keyword: keyword || null,
+            salary: salary || null,
+            userEmail: email
+        };
+
+        try {
+            const resp = await fetch('/api/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (resp.ok) {
+                // Сообщаем об успехе и, например, возвращаем на главную через 2 секунды
+                msg.style.color = '#27ae60';
+                msg.textContent = 'Уведомление успешно создано!';
+                setTimeout(() => window.location.href = '/aggregator.html', 2000);
+            } else {
+                // Если сервер вернул ошибку, покажем её
+                const errorData = await resp.json();
+                msg.style.color = '#e74c3c';
+                msg.textContent = `Ошибка: ${errorData.message || resp.statusText}`;
+            }
+        } catch (err) {
+            console.error(err);
+            msg.style.color = '#e74c3c';
+            msg.textContent = 'Не удалось отправить данные. Попробуйте ещё раз.';
+        }
+    });
+</script>
+
+</body>
+</html>

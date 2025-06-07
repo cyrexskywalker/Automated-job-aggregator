@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Список вакансий</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+        }
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 1rem auto;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        /* Строка поиска */
+        .search-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .search-bar input[type="text"] {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        .search-bar button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border: none;
+            background: #3498db;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .search-bar button:hover {
+            background: #2980b9;
+        }
+        /* Фильтры (город, компания, зарплата) */
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .filters > div {
+            flex: 1 1 200px;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        /* Таблица вакансий */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        th {
+            background: #ecf0f1;
+            cursor: pointer;
+        }
+        tr:nth-child(even) {
+            background: #fafafa;
+        }
+        .loading {
+            text-align: center;
+            margin: 2rem 0;
+            font-size: 1.1rem;
+            color: #555;
+        }
+        /* Экспорт и кнопка уведомления */
+        .export-buttons {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+        .export-buttons button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border: none;
+            background: #27ae60;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .export-buttons button:hover {
+            background: #1e8449;
+        }
+        /* Кнопка создания уведомления */
+        .create-notification {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        .create-notification button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            background: #e67e22;
+            color: white;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .create-notification button:hover {
+            background: #d35400;
+        }
+        @media (max-width: 600px) {
+            .search-bar, .filters {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Вакансии</h1>
+    <a href="/analytics.html" style="color:#ecf0f1; margin-left:1rem;">📊 Аналитика</a>
+</header>
+
+<div class="container">
+
+    <!-- 1. Единая строка поиска по описанию -->
+    <div class="search-bar">
+        <input type="text" id="searchKeyword" placeholder="Поиск..." />
+        <button id="btn-search">Найти</button>
+        <button id="btn-reset">Сбросить</button>
+    </div>
+
+    <!-- 2. Блок фильтров (город, компания, мин. зарплата) -->
+    <div class="filters">
+        <div>
+            <label for="filter-city">Город</label>
+            <input type="text" id="filter-city" placeholder="Введите город" />
+        </div>
+        <div>
+            <label for="filter-company">Компания</label>
+            <input type="text" id="filter-company" placeholder="Введите компанию" />
+        </div>
+        <div>
+            <label for="filter-salary">Мин. зарплата</label>
+            <input type="text" id="filter-salary" placeholder="От (число)" />
+        </div>
+        <div>
+            <label for="sort-by">Сортировка</label>
+            <select id="sort-by">
+                <option value="publicationDate,desc">По дате (свежие)</option>
+                <option value="publicationDate,asc">По дате (старые)</option>
+                <option value="salary,desc">По зарплате (убыв.)</option>
+                <option value="salary,asc">По зарплате (возр.)</option>
+            </select>
+        </div>
+        <div style="align-self: flex-end;">
+            <button id="btn-filter">Применить</button>
+        </div>
+    </div>
+
+    <!-- 3. Таблица вакансий -->
+    <div id="vacancies-container">
+        <div class="loading" id="loading-indicator">Загрузка...</div>
+        <table id="vacancies-table" style="display: none;">
+            <thead>
+            <tr>
+                <th data-field="title">Заголовок</th>
+                <th data-field="company">Компания</th>
+                <th data-field="salary">Зарплата</th>
+                <th data-field="city">Город</th>
+                <th data-field="publicationDate">Дата</th>
+            </tr>
+            </thead>
+            <tbody id="vacancies-body">
+            <!-- сюда JS вставит строки -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. Кнопки экспорта -->
+    <div class="export-buttons">
+        <button id="export-csv">Экспорт в CSV</button>
+        <button id="export-json">Экспорт в JSON</button>
+        <button id="export-html">Экспорт в HTML</button>
+    </div>
+
+    <!-- 5. Кнопка создания уведомления -->
+    <div class="create-notification">
+        <button id="btn-create-notification">Создать уведомление</button>
+    </div>
+
+</div>
+
+<script>
+    // Базовый URL бекенда
+    const API_URL = '/api/vacancies';
+
+    // Текущие параметры фильтра/поиска/сортировки
+    let params = {
+        page: 0,
+        size: 50,
+        sort: 'publicationDate,desc'
+    };
+
+    // HTML-элементы
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const vacanciesTable   = document.getElementById('vacancies-table');
+    const vacanciesBody    = document.getElementById('vacancies-body');
+    const searchInput      = document.getElementById('searchKeyword');
+    const cityInput        = document.getElementById('filter-city');
+    const companyInput     = document.getElementById('filter-company');
+    const salaryInput      = document.getElementById('filter-salary');
+    const sortSelect       = document.getElementById('sort-by');
+    const btnCreateNotif   = document.getElementById('btn-create-notification');
+
+    // Сбор фильтров и поискового запроса в объект params
+    function gatherParams() {
+        const kw      = searchInput.value.trim();
+        const city    = cityInput.value.trim();
+        const company = companyInput.value.trim();
+        const salary  = salaryInput.value.trim();
+        const sortBy  = sortSelect.value;
+
+        // Сортировка
+        params.sort = sortBy;
+        // При новом поиске/фильтре — сбрасываем на первую страницу
+        params.page = 0;
+
+        if (kw)      params.keyword = kw;
+        else         delete params.keyword;
+
+        if (city)    params.city = city;
+        else         delete params.city;
+
+        if (company) params.company = company;
+        else         delete params.company;
+
+        if (salary)  params.salary = salary;
+        else         delete params.salary;
+    }
+
+    // Построение query-string из params
+    function buildQuery(obj) {
+        return Object.keys(obj)
+            .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]))
+            .join('&');
+    }
+
+    // Загрузка вакансий с бекенда
+    async function loadVacancies() {
+        loadingIndicator.style.display = 'block';
+        vacanciesTable.style.display = 'none';
+        vacanciesBody.innerHTML = '';
+
+        gatherParams();
+        const qs  = buildQuery(params);
+        const url = API_URL + (qs ? ('?' + qs) : '');
+
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error('Ошибка ' + resp.status);
+            const data = await resp.json();
+
+            let list = [];
+            if (Array.isArray(data)) {
+                list = data;
+            } else if (data.content && Array.isArray(data.content)) {
+                list = data.content;
+            }
+
+            renderVacancies(list);
+        } catch (err) {
+            console.error(err);
+            vacanciesBody.innerHTML = '<tr><td colspan="5">Не удалось загрузить вакансии.</td></tr>';
+            vacanciesTable.style.display = 'table';
+        } finally {
+            loadingIndicator.style.display = 'none';
+        }
+    }
+
+    // Отображение списка вакансий
+    function renderVacancies(list) {
+        vacanciesBody.innerHTML = '';
+        if (!Array.isArray(list) || list.length === 0) {
+            vacanciesBody.innerHTML = '<tr><td colspan="5">Вакансий не найдено.</td></tr>';
+        } else {
+            list.forEach(v => {
+                const tr = document.createElement('tr');
+
+                // 1) Заголовок (ссылка)
+                const tdTitle = document.createElement('td');
+                const a        = document.createElement('a');
+                a.href        = v.url || '#';
+                a.target      = '_blank';
+                a.textContent = v.title || '—';
+                tdTitle.appendChild(a);
+                tr.appendChild(tdTitle);
+
+                // 2) Компания
+                const tdComp = document.createElement('td');
+                tdComp.textContent = v.company || '—';
+                tr.appendChild(tdComp);
+
+                // 3) Зарплата
+                const tdSal = document.createElement('td');
+                tdSal.textContent = (v.salary != null && v.salary !== '') ? v.salary : '—';
+                tr.appendChild(tdSal);
+
+                // 4) Город
+                const tdCity = document.createElement('td');
+                tdCity.textContent = v.city || '—';
+                tr.appendChild(tdCity);
+
+                // 5) Дата (дд.мм.гггг)
+                const tdDate = document.createElement('td');
+                if (v.publicationDate) {
+                    const d   = new Date(v.publicationDate);
+                    const dd  = String(d.getDate()).padStart(2, '0');
+                    const mm  = String(d.getMonth() + 1).padStart(2, '0');
+                    const yyyy = d.getFullYear();
+                    tdDate.textContent = `${dd}.${mm}.${yyyy}`;
+                } else {
+                    tdDate.textContent = '—';
+                }
+                tr.appendChild(tdDate);
+
+                vacanciesBody.appendChild(tr);
+            });
+        }
+        vacanciesTable.style.display = 'table';
+    }
+
+    // Экспорт в CSV
+    function exportToCSV() {
+        gatherParams();
+        const qs = buildQuery({ ...params, size: 10000 });
+        fetch(API_URL + '?' + qs)
+            .then(r => r.json())
+            .then(data => {
+                let list = [];
+                if (Array.isArray(data)) list = data;
+                else if (data.content && Array.isArray(data.content)) list = data.content;
+
+                const headers = ['Заголовок','Компания','Зарплата','Город','Дата'];
+                const rows = list.map(v => {
+                    const date = v.publicationDate
+                        ? new Date(v.publicationDate).toISOString().split('T')[0]
+                        : '';
+                    return [
+                        `"${(v.title || '').replace(/"/g,'""')}"`,
+                        `"${(v.company || '').replace(/"/g,'""')}"`,
+                        v.salary != null ? `"${v.salary}"` : '',
+                        `"${(v.city || '').replace(/"/g,'""')}"`,
+                        date ? `"${date}"` : ''
+                    ].join(';');
+                });
+                const csv = [headers.join(';'), ...rows].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a   = document.createElement('a');
+                a.href    = url;
+                a.download= 'vacancies.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            })
+            .catch(err => console.error(err));
+    }
+
+    // Экспорт в JSON
+    function exportToJSON() {
+        gatherParams();
+        const qs = buildQuery({ ...params, size: 10000 });
+        fetch(API_URL + '?' + qs)
+            .then(r => r.json())
+            .then(data => {
+                let list = [];
+                if (Array.isArray(data)) list = data;
+                else if (data.content && Array.isArray(data.content)) list = data.content;
+
+                const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href     = url;
+                a.download = 'vacancies.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            })
+            .catch(err => console.error(err));
+    }
+
+    // Экспорт в HTML
+    function exportToHTML() {
+        gatherParams();
+        const qs = buildQuery({ ...params, size: 10000 });
+        fetch(API_URL + '?' + qs)
+            .then(r => r.json())
+            .then(data => {
+                let list = [];
+                if (Array.isArray(data)) list = data;
+                else if (data.content && Array.isArray(data.content)) list = data.content;
+
+                let html = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Экспорт вакансий</title>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; }
+    th { background: #eee; }
+  </style>
+</head>
+<body>
+  <h1>Экспорт вакансий</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Заголовок</th>
+        <th>Компания</th>
+        <th>Зарплата</th>
+        <th>Город</th>
+        <th>Дата</th>
+      </tr>
+    </thead>
+    <tbody>
+`;
+                list.forEach(v => {
+                    const date = v.publicationDate
+                        ? new Date(v.publicationDate).toISOString().split('T')[0]
+                        : '';
+                    html += `
+      <tr>
+        <td><a href="${v.url || '#'}" target="_blank">${v.title || ''}</a></td>
+        <td>${v.company || ''}</td>
+        <td>${v.salary != null ? v.salary : ''}</td>
+        <td>${v.city || ''}</td>
+        <td>${date}</td>
+      </tr>
+`;
+                });
+                html += `
+    </tbody>
+  </table>
+</body>
+</html>
+`;
+                const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href     = url;
+                a.download = 'vacancies.html';
+                a.click();
+                URL.revokeObjectURL(url);
+            })
+            .catch(err => console.error(err));
+    }
+
+    // Привязка событий
+    document.getElementById('btn-search').addEventListener('click', loadVacancies);
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        searchInput.value  = '';
+        cityInput.value    = '';
+        companyInput.value = '';
+        salaryInput.value  = '';
+        sortSelect.value   = 'publicationDate,desc';
+        loadVacancies();
+    });
+    document.getElementById('btn-filter').addEventListener('click', loadVacancies);
+    document.getElementById('export-csv').addEventListener('click', exportToCSV);
+    document.getElementById('export-json').addEventListener('click', exportToJSON);
+    document.getElementById('export-html').addEventListener('click', exportToHTML);
+
+    // Переход на страницу создания уведомления
+    btnCreateNotif.addEventListener('click', () => {
+        window.location.href = '/notification.html';
+    });
+
+    // При загрузке страницы сразу показываем вакансии
+    window.addEventListener('DOMContentLoaded', loadVacancies);
+</script>
+
+</body>
+</html>

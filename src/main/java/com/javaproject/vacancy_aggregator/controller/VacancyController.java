@@ -9,6 +9,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/vacancies")
 public class VacancyController {
@@ -23,10 +25,13 @@ public class VacancyController {
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String company,
             @RequestParam(required = false) String salary,
-            @ParameterObject @PageableDefault(page = 0, size = 20, sort = "publicationDate", direction = Sort.Direction.DESC)
+            @RequestParam(required = false, name = "type") String employmentType,
+            @RequestParam(required = false, name = "keyword") String keyword,
+            @ParameterObject
+            @PageableDefault(page = 0, size = 20, sort = "publicationDate", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        return vacancyService.findAll(city, company, salary, pageable)
+        return vacancyService.findAll(city, company, salary, employmentType, keyword, pageable)
                 .map(VacancyDTO::from);
     }
 

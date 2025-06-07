@@ -31,7 +31,7 @@ CREATE TABLE category (
     name VARCHAR(100) UNIQUE NOT NULL
 );
 
--- Связь многие-ко-многим вакансии ↔ категории
+-- Связь many-to-many вакансии ↔ категории
 CREATE TABLE vacancy_category (
     vacancy_id  BIGINT NOT NULL REFERENCES vacancy(id),
     category_id BIGINT NOT NULL REFERENCES category(id),

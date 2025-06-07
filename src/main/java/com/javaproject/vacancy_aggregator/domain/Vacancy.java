@@ -32,6 +32,9 @@ public class Vacancy {
 
     private String salary;
 
+    @Column(name = "employment_type")
+    private String employmentType;
+
     private String description;
 
     private LocalDateTime publicationDate = LocalDateTime.now();
@@ -42,7 +45,7 @@ public class Vacancy {
     @Column(nullable = false, unique = true)
     private String url;
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(name = "vacancy_category",
             joinColumns = @JoinColumn(name = "vacancy_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"))

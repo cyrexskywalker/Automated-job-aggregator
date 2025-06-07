@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Аналитика вакансий</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        h2 { margin-top: 2rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+        th, td { border: 1px solid #ccc; padding: .5rem; text-align: left; }
+        th { background: #eee; }
+    </style>
+</head>
+<body>
+<h1>Аналитика и статистика</h1>
+
+<h2>1. Количество вакансий по городам</h2>
+<table id="tbl-city">
+    <thead><tr><th>Город</th><th>Кол-во</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<h2>2. Количество вакансий по категориям</h2>
+<table id="tbl-category">
+    <thead><tr><th>Категория</th><th>Кол-во</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<h2>3. Количество вакансий по зарплатным группам</h2>
+<table id="tbl-salary">
+    <thead><tr><th>Зарплата (строка)</th><th>Кол-во</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    async function loadTable(url, tableId, cols) {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        const tbody = document.querySelector(`#${tableId} tbody`);
+        tbody.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            cols.forEach(c => {
+                const td = document.createElement('td');
+                td.textContent = row[c] ?? '—';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+    }
+
+    loadTable('/api/analytics/count-by-city',     'tbl-city',     ['city','count']);
+    loadTable('/api/analytics/count-by-category', 'tbl-category', ['categoryName','count']);
+    loadTable('/api/analytics/count-by-salary',   'tbl-salary',   ['salaryValue','count']);
+</script>
+</body>
+</html>

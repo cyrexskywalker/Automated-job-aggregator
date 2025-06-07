@@ -19,6 +19,19 @@ public class Category {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Category)) return false;
+        Category other = (Category) o;
+        return name != null && name.equalsIgnoreCase(other.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name == null ? 0 : name.toLowerCase().hashCode();
+    }
+
     public Category() {
     }
 
