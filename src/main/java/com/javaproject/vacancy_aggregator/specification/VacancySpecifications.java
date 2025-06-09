@@ -9,6 +9,8 @@ public class VacancySpecifications {
                 cb.equal(cb.lower(root.get("city")), city.toLowerCase());
     }
 
+
+
     public static Specification<Vacancy> companyEquals(String company) {
         return (root, cq, cb) ->
                 cb.equal(cb.lower(root.get("company").get("name")), company.toLowerCase());

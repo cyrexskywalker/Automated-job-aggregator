@@ -1,7 +1,6 @@
 package com.javaproject.vacancy_aggregator.service;
 
 import com.javaproject.vacancy_aggregator.domain.*;
-import com.javaproject.vacancy_aggregator.dto.GroupCountDTO;
 import com.javaproject.vacancy_aggregator.repository.CategoryRepository;
 import com.javaproject.vacancy_aggregator.repository.CompanyRepository;
 import com.javaproject.vacancy_aggregator.repository.SourceRepository;
@@ -95,16 +94,6 @@ public class VacancyService {
             String keyword,
             Pageable pageable
     ) {
-        System.out.println(">>> [Service] findAll(...) called with " +
-                "city=" + city +
-                ", company=" + company +
-                ", salary=" + salary +
-                ", employmentType=" + employmentType +
-                ", keyword=" + keyword +
-                ", pageable=" + pageable.getPageNumber() +
-                "×" + pageable.getPageSize() +
-                ", sort=" + pageable.getSort()
-        );
         Specification<Vacancy> spec = Specification.where(null);
 
         if (city != null && !city.isBlank()) {
@@ -120,11 +109,9 @@ public class VacancyService {
             spec = spec.and(VacancySpecifications.employmentEquals(employmentType));
         }
         if (keyword != null && !keyword.isBlank()) {
-            System.out.println(">>> [Service] добавляем спецификацию textContainsKeyword(" + keyword + ")");
             spec = spec.and(VacancySpecifications.textContainsKeyword(keyword));
         }
         Page<Vacancy> page = vacancyRepo.findAll(spec, pageable);
-        System.out.println(">>> [Service] returned " + page.getTotalElements() + " вакансий");
         return page;
     }
 
@@ -132,44 +119,5 @@ public class VacancyService {
     public Vacancy findById(Long id) {
         return vacancyRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Вакансия с таким id не найдена: " + id));
-    }
-
-    /**
-     * Возвращает список GroupCountDTO, где key = город, count = число вакансий в этом городе
-     */
-    @Transactional(readOnly = true)
-    public List<GroupCountDTO> groupByCity() {
-        return vacancyRepo.countGroupByCity().stream()
-                .map(arr -> new GroupCountDTO(
-                        (String) arr[0],
-                        (Long)   arr[1]
-                ))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Возвращает список GroupCountDTO, где key = название категории, count = число вакансий в этой категории
-     */
-    @Transactional(readOnly = true)
-    public List<GroupCountDTO> groupByCategory() {
-        return vacancyRepo.countGroupByCategory().stream()
-                .map(arr -> new GroupCountDTO(
-                        (String) arr[0],
-                        (Long)   arr[1]
-                ))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Возвращает список GroupCountDTO, где key = строка salary, count = число вакансий с такой salary
-     */
-    @Transactional(readOnly = true)
-    public List<GroupCountDTO> groupBySalary() {
-        return vacancyRepo.countGroupBySalary().stream()
-                .map(arr -> new GroupCountDTO(
-                        (String) arr[0],
-                        (Long)   arr[1]
-                ))
-                .collect(Collectors.toList());
     }
 }

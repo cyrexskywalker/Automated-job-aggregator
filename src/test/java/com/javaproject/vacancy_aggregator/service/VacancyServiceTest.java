@@ -29,21 +29,16 @@ class VacancyServiceTest {
 
     @Test
     void findAll_withoutAnyFilter_shouldReturnEmptyPage_andInvokeRepo() {
-        // подготовим pageable
         Pageable pageable = PageRequest.of(0, 50, Sort.by(Sort.Direction.DESC, "publicationDate"));
         Page<Vacancy> emptyPage = new PageImpl<>(List.of());
-        // мокируем репозиторий на любой Specification и наш pageable
         when(vacancyRepo.findAll(any(Specification.class), eq(pageable))).thenReturn(emptyPage);
 
-        // вызываем сервис без фильтров
         Page<Vacancy> result = vacancyService.findAll(
                 null, null, null, null, null,
                 pageable
         );
 
-        // проверяем результат
         assertThat(result.getContent()).isEmpty();
-        // убедились, что репозиторий вызвали ровно один раз с любым Specification
         verify(vacancyRepo, times(1)).findAll(any(Specification.class), eq(pageable));
     }
 
@@ -52,10 +47,8 @@ class VacancyServiceTest {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("salary"));
         Vacancy dummy = new Vacancy();
         Page<Vacancy> page = new PageImpl<>(List.of(dummy));
-        // мок на любой Specification
         when(vacancyRepo.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
 
-        // вызываем сервис со всеми фильтрами
         Page<Vacancy> result = vacancyService.findAll(
                 "Москва",
                 "ACME",
@@ -65,9 +58,7 @@ class VacancyServiceTest {
                 pageable
         );
 
-        // проверяем, что вернулся наш dummy
         assertThat(result.getContent()).containsExactly(dummy);
-        // и репозиторий вызван с ненулевой спецификацией
         verify(vacancyRepo, times(1)).findAll(any(Specification.class), eq(pageable));
     }
 }
